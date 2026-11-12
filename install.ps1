@@ -1,17 +1,20 @@
 <#
 .SYNOPSIS
-    Installs or removes the IFR curtain in DCS World.
+    Development install of the IFR curtain in DCS World (players use the Open Mod Manager
+    package built by tools\build_omm.py instead).
 
 .DESCRIPTION
     - Copies mod\Scripts\...\IFR_CURTAIN into the DCS install.
     - Adds one line to the shared kneeboard declaration, loaded by most modules; the curtain
       itself is then declared only for the aircraft listed in IFR_CURTAIN\shapes.lua.
-    - Adds the curtain commands to the input files of the modules listed in $InputModules:
-      keyboard and joystick default.lua, and the complete hardware profiles (HOTAS Warthog,
-      X52...) built the same way. The *.diff.lua profiles inherit them from default.lua.
-    Every patched file is saved as <file>.ifr-curtain.bak before it is changed; the backup is
+    The key bindings are not installed here: they come from the Custom_Keybinds package
+    (dcs-community-keybinds), through Quaggles' DCS Input Command Injector.
+
+    The patched file is saved as <file>.ifr-curtain.bak before it is changed; the backup is
     refreshed whenever the file is found without the curtain (after a DCS update, say).
-    A DCS update or repair overwrites the patched files: run this script again afterwards.
+    A DCS update or repair overwrites the patched file: run this script again afterwards.
+    After editing the mod, run it again and restart the mission: cockpit scripts are read at
+    each mission start.
 
 .EXAMPLE
     .\install.ps1
@@ -33,13 +36,6 @@ $ModSource   = Join-Path $PSScriptRoot "mod\Scripts\Aircrafts\_Common\Cockpit\IF
 $ModTarget   = Join-Path $DcsPath "Scripts\Aircrafts\_Common\Cockpit\IFR_CURTAIN"
 $DeclareFile = Join-Path $DcsPath "Scripts\Aircrafts\_Common\Cockpit\KNEEBOARD\declare_kneeboard_device.lua"
 
-# Modules whose input files get the curtain commands (folder under Mods\aircraft, input sub-folder).
-# A module listed here must also have a shape in IFR_CURTAIN\shapes.lua.
-$InputModules = @(
-    @{ Module = "A-10C_2"; Input = "A-10C_2" }
-)
-
-$DeviceId = 250
 $Utf8Strict = New-Object System.Text.UTF8Encoding($false, $true)
 
 # Reads a file as UTF-8, remembering whether it starts with a byte order mark.
@@ -78,12 +74,8 @@ function Remove-Block([string]$Text) {
     return [regex]::Replace($Text, $pattern, "")
 }
 
-# $Where: "end" to append the block, "return" to insert it before the last top-level return.
-function Set-Block([string]$Path, [string[]]$Lines, [string]$Where) {
-    if (-not (Test-Path -LiteralPath $Path)) {
-        Write-Warning "Missing, skipped: $Path"
-        return
-    }
+# Appends the block at the end of the file.
+function Set-Block([string]$Path, [string[]]$Lines) {
     $file = Read-Text $Path
     if (-not (Test-Block $file.Text)) {
         # The file is as DCS shipped it: (re)take the backup from it.
@@ -91,20 +83,8 @@ function Set-Block([string]$Path, [string[]]$Lines, [string]$Where) {
     }
     $text = Remove-Block $file.Text
     $nl = Get-Newline $text
-    $block = "-- $Marker BEGIN$nl" + (($Lines | ForEach-Object { $_ + $nl }) -join "") + "-- $Marker END$nl"
-
-    if ($Where -eq "end") {
-        if (-not $text.EndsWith("`n")) { $text += $nl }
-        $text += $block
-    }
-    else {
-        $returns = [regex]::Matches($text, "(?m)^return\b")
-        if ($returns.Count -eq 0) {
-            throw "No top-level 'return' found in $Path"
-        }
-        $index = $returns[$returns.Count - 1].Index
-        $text = $text.Substring(0, $index) + $block + $text.Substring($index)
-    }
+    if (-not $text.EndsWith("`n")) { $text += $nl }
+    $text += "-- $Marker BEGIN$nl" + (($Lines | ForEach-Object { $_ + $nl }) -join "") + "-- $Marker END$nl"
     Write-Text $Path $text $file.Bom
     Write-Host "Patched: $Path"
 }
@@ -130,39 +110,12 @@ function Clear-Block([string]$Path) {
     Write-Host "Cleaned: $Path"
 }
 
-# Input files of a module that build their commands in a local 'res' table and return its
-# keyCommands: default.lua and the complete hardware profiles. Others are reported and skipped.
-function Get-InputFiles($Entry) {
-    $base = Join-Path $DcsPath ("Mods\aircraft\" + $Entry.Module + "\Input\" + $Entry.Input)
-    $files = @()
-    foreach ($kind in @("keyboard", "joystick")) {
-        $folder = Join-Path $base $kind
-        if (-not (Test-Path -LiteralPath $folder)) { continue }
-        foreach ($f in Get-ChildItem -LiteralPath $folder -Filter "*.lua" -File) {
-            if ($f.Name -like "*.diff.lua") { continue }
-            $text = (Read-Text $f.FullName).Text
-            $usesRes = ($text -match "(?m)^local res\b") -and
-                       (($text -match "keyCommands\s*=\s*res\.keyCommands") -or ($text -match "(?m)^return res\b"))
-            if ($usesRes) {
-                $files += $f.FullName
-            }
-            else {
-                Write-Host "No 'res' command table, skipped: $($f.FullName)"
-            }
-        }
-    }
-    return $files
-}
-
 if (-not (Test-Path -LiteralPath $DeclareFile)) {
     throw "DCS not found: $DeclareFile does not exist. Pass -DcsPath."
 }
 
 if ($Uninstall) {
     Clear-Block $DeclareFile
-    foreach ($entry in $InputModules) {
-        foreach ($path in Get-InputFiles $entry) { Clear-Block $path }
-    }
     if (Test-Path -LiteralPath $ModTarget) {
         Remove-Item -LiteralPath $ModTarget -Recurse -Force
         Write-Host "Removed: $ModTarget"
@@ -171,27 +124,14 @@ if ($Uninstall) {
     return
 }
 
-# 1. Mod files
 if (Test-Path -LiteralPath $ModTarget) {
     Remove-Item -LiteralPath $ModTarget -Recurse -Force
 }
 Copy-Item -LiteralPath $ModSource -Destination $ModTarget -Recurse
 Write-Host "Copied: $ModTarget"
 
-# 2. Shared kneeboard declaration (the curtain then declares itself for the aircraft it knows)
 Set-Block $DeclareFile @(
     'dofile(LockOn_Options.common_script_path.."IFR_CURTAIN/declare.lua")'
-) "end"
+)
 
-# 3. Input commands
-foreach ($entry in $InputModules) {
-    foreach ($path in Get-InputFiles $entry) {
-        Set-Block $path @(
-            "res.keyCommands[#res.keyCommands + 1] = {down = 3001, cockpit_device_id = $DeviceId, value_down = 1.0, name = _('IFR curtain: toggle'), category = _('IFR curtain')}",
-            "res.keyCommands[#res.keyCommands + 1] = {down = 3002, cockpit_device_id = $DeviceId, value_down = 1.0, name = _('IFR curtain: close'), category = _('IFR curtain')}",
-            "res.keyCommands[#res.keyCommands + 1] = {down = 3003, cockpit_device_id = $DeviceId, value_down = 1.0, name = _('IFR curtain: open'), category = _('IFR curtain')}"
-        ) "return"
-    }
-}
-
-Write-Host "IFR curtain installed. Bind 'IFR curtain: toggle' in Options > Controls (category 'IFR curtain')."
+Write-Host "IFR curtain installed (key bindings: Custom_Keybinds package, through Quaggles' injector)."

@@ -17,25 +17,40 @@ Chaque facette prend la texture vue du côté de la boîte vers lequel elle est 
 
 Le rideau démarre ouvert. Le HUD reste visible sous le rideau : pour s'en passer, l'éteindre dans le cockpit.
 
+## Installer avec Open Mod Manager
+
+Trois paquets, dans deux canaux :
+
+| Paquet | Canal | Rôle |
+|---|---|---|
+| `IFR_Curtain_v<version>.ozp` | Game files (`DCS World`) | le rideau |
+| `Quaggles_Injector` | Game files | permet d'ajouter des commandes sans toucher aux fichiers des modules |
+| `Custom_Keybinds` (version du 2026-11-12 ou plus récente) | User files (`Saved Games\DCS`) | les commandes du rideau, avec les autres commandes de [dcs-community-keybinds](https://github.com/davidp57/dcs-community-keybinds) |
+
+Puis dans DCS : Options > Commandes > A-10C II, catégorie « IFR curtain », assigner « IFR curtain: toggle » (ou « close » / « open »).
+
+Le paquet du rideau contient le dossier `IFR_CURTAIN` et une copie complète de `KNEEBOARD\declare_kneeboard_device.lua` avec une ligne ajoutée : Open Mod Manager ne sait que remplacer des fichiers entiers, il sauvegarde l'original et le remet à la désinstallation.
+Cette copie est prise sur la version de DCS installée au moment de construire le paquet.
+
+Construire le paquet (dans `dist\`) :
+
+```powershell
+python "D:\dev\_dcs-other\dcs-ifr-curtain\tools\build_omm.py" 1.0.0 "C:\jeux\DCS World"
+```
+
 ## Contenu
 
 - `mod/Scripts/Aircrafts/_Common/Cockpit/IFR_CURTAIN/` : la liste des avions équipés et la forme de leur bulle (`shapes.lua`), le module Lua (`device.lua`), l'écran de cockpit (`indicator.lua`, `page.lua`), la texture (`curtain.tga`) et leur déclaration (`declare.lua`).
-- `install.ps1` : installe ou retire le rideau.
+  Ajoutée au fichier du kneeboard, chargé par la plupart des modules, la déclaration ne déclare le rideau que pour les avions de `shapes.lua`, et s'abstient si l'identifiant d'équipement 250 est déjà pris.
+- `tools/build_omm.py` : construit le paquet Open Mod Manager.
 - `tools/make_curtain_texture.py` : génère `curtain.tga` (Python, `numpy` et `Pillow`).
+- `install.ps1` : installation de développement, sans Open Mod Manager (voir plus bas).
 
-L'installation :
+Les commandes du rideau (`down` 3001 à 3003 sur l'équipement 250) sont ajoutées aux fichiers A-10C II de dcs-community-keybinds, y compris les profils HOTAS Warthog et Saitek X52.
 
-1. copie `IFR_CURTAIN` dans `Scripts\Aircrafts\_Common\Cockpit\` ;
-2. ajoute une ligne à `KNEEBOARD\declare_kneeboard_device.lua`, chargé par la plupart des modules ; le rideau ne se déclare ensuite que pour les avions de `shapes.lua`, et s'abstient si l'identifiant d'équipement 250 est déjà pris ;
-3. ajoute les commandes du rideau aux fichiers de commandes des modules listés dans `$InputModules` (pour l'instant le A-10C II seul) : `default.lua` du clavier et du joystick, et les profils complets propres à un matériel (HOTAS Warthog, Saitek X52).
-   Les profils `*.diff.lua` héritent de `default.lua` ; les fichiers construits autrement (MFD, palonnier) sont signalés et laissés tels quels.
+## Installation de développement
 
-Chaque fichier modifié est sauvegardé en `<fichier>.ifr-curtain.bak` avant la modification, et les ajouts sont encadrés par des marqueurs `-- IFR-CURTAIN BEGIN` / `-- IFR-CURTAIN END`.
-La sauvegarde est reprise chaque fois que le fichier est trouvé sans le rideau (après une mise à jour de DCS, par exemple), pour rester celle de la version en place.
-La désinstallation rend les fichiers identiques aux originaux et supprime les sauvegardes.
-Un fichier qui n'est pas en UTF-8 valide est refusé plutôt que réécrit.
-
-## Installer, retirer
+Pour modifier le mod et l'essayer sans repasser par Open Mod Manager (ne pas installer le paquet en même temps) :
 
 ```powershell
 & "D:\dev\_dcs-other\dcs-ifr-curtain\install.ps1"
@@ -47,12 +62,15 @@ Un fichier qui n'est pas en UTF-8 valide est refusé plutôt que réécrit.
 
 Pour une autre installation de DCS : `-DcsPath "D:\DCS World"`.
 
-Puis dans DCS : Options > Commandes > A-10C II, catégorie « IFR curtain », assigner « IFR curtain: toggle » (ou « close » / « open »).
+Le script copie `IFR_CURTAIN` et ajoute la ligne d'accroche au fichier du kneeboard, encadrée par `-- IFR-CURTAIN BEGIN` / `-- IFR-CURTAIN END`.
+Le fichier est sauvegardé en `.ifr-curtain.bak` avant la modification, sauvegarde reprise chaque fois qu'il est trouvé sans le rideau (après une mise à jour de DCS, par exemple).
+La désinstallation le rend identique à l'original et supprime la sauvegarde ; un fichier qui n'est pas en UTF-8 valide est refusé plutôt que réécrit.
+Les commandes viennent toujours de Custom_Keybinds.
 
 ## Limites
 
 - **L'IC échoue** : des scripts de DCS sont modifiés. Utilisable en solo et sur les serveurs qui ne vérifient pas les scripts.
-- **Une mise à jour ou une réparation de DCS écrase les fichiers modifiés** : relancer `install.ps1` après chaque mise à jour.
+- **Une mise à jour ou une réparation de DCS écrase le fichier du kneeboard** : le rideau disparaît. Réinstaller le paquet (le reconstruire si la mise à jour a changé ce fichier), ou relancer `install.ps1`.
 - **Le rideau ne fait pas d'ombre** : le soleil éclaire toujours la planche, et les ombres des montants tournent quand l'avion vire, ce qui trahit la position du soleil.
   Pour l'exercice, voler sous une couche nuageuse épaisse (pas de soleil direct) ou de nuit.
 - **Les arêtes se devinent encore un peu**, là où une facette passe d'une projection de la texture à une autre, au milieu des arrondis.
@@ -62,7 +80,7 @@ Puis dans DCS : Options > Commandes > A-10C II, catégorie « IFR curtain », as
 La bulle se règle dans `shapes.lua` : pour chaque avion, la distance en mètres de l'origine du repère à chaque mur (`left`, `right`, `up`, `down`, `front`, `back`, toutes au-dessus de 0) et l'arrondi (`squareness`, au-dessus de 1 : 2 pour un ellipsoïde, plus pour une boîte aux arêtes plus vives).
 L'avion est reconnu par un morceau du chemin de ses scripts de cockpit (`A-10C_2` pour `Mods/aircraft/A-10C_2/...`).
 Un avion absent de `shapes.lua` n'a pas de rideau du tout.
-Pour lui donner les touches, l'ajouter aussi à `$InputModules` dans `install.ps1` ; ses fichiers de commandes doivent construire une table `local res` (comme ceux du A-10C II), sinon ils sont laissés tels quels.
+Pour lui donner les touches, ajouter les trois commandes du rideau à ses fichiers dans dcs-community-keybinds (`InputCommands/<module>/Input/...`), comme pour le A-10C II, puis reconstruire Custom_Keybinds.
 Un nouvel avion n'a que le A-10C II comme point de départ : commencer large (2 m partout), puis rapprocher mur par mur.
 
 L'origine n'est pas la tête du pilote : sur le A-10C II elle est en avant, vers la planche.
