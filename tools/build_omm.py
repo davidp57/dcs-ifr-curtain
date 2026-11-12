@@ -30,7 +30,7 @@ DESCRIPTION = """Rideau de vol aux instruments : une touche ferme une bulle opaq
 
 Avions équipés : A-10C II.
 
-Touches (catégorie « IFR curtain ») : fournies par Custom_Keybinds (« user files »), avec Quaggles Injector (« game files »).
+Touches (catégorie « IFR curtain ») : fournies par Custom_Keybinds (« user files »), avec Quaggles Injector (« game files »). Avec elles, le rideau démarre ouvert et la touche le ferme ; sans elles, il reste fermé toute la mission.
 
 Remplace Scripts\\Aircrafts\\_Common\\Cockpit\\KNEEBOARD\\declare_kneeboard_device.lua (une ligne ajoutée) : à reconstruire si une mise à jour de DCS modifie ce fichier. Ne passe pas l'IC.
 
@@ -43,6 +43,7 @@ Le cockpit (planche, HUD, montants) reste visible, l'extérieur est caché.
 
 - Avions équipés : A-10C II.
 - Touches : « IFR curtain: toggle / close / open », catégorie « IFR curtain », fournies par le paquet Custom_Keybinds avec Quaggles Injector.
+  Avec elles, le rideau démarre ouvert et la touche le ferme ; sans elles, il reste fermé toute la mission.
 - Remplace `declare_kneeboard_device.lua` (une ligne ajoutée) : à reconstruire si une mise à jour de DCS modifie ce fichier.
 - Ne passe pas l'IC : solo et serveurs qui ne vérifient pas les scripts.
 

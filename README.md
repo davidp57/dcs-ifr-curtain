@@ -15,11 +15,25 @@ La bulle est une boîte aux arêtes arrondies (une superellipsoïde) qui touche 
 Elle est faite d'environ 500 facettes plates, chacune placée puis orientée par deux pivots emboîtés (lacet, puis tangage), sans baisse d'images par seconde constatée en vol sur le A-10C II.
 Chaque facette prend la texture vue du côté de la boîte vers lequel elle est tournée (dessus, côté, face), à partir d'une seule image qui couvre toute la bulle.
 
-Le rideau démarre ouvert. Le HUD reste visible sous le rideau : pour s'en passer, l'éteindre dans le cockpit.
+Le HUD reste visible sous le rideau : pour s'en passer, l'éteindre dans le cockpit.
+
+## Au démarrage : ouvert ou fermé
+
+Au démarrage de la mission, le rideau regarde si ses commandes existent :
+
+| Situation | Au démarrage |
+|---|---|
+| l'injecteur de Quaggles est installé et le fichier de commandes injecté de l'avion contient « IFR curtain: toggle » (paquet Custom_Keybinds à jour) | **ouvert** ; la touche le ferme et le rouvre |
+| sinon (rideau installé seul) | **fermé**, pour toute la mission |
+| la vérification échoue | **fermé**, par prudence |
+
+La raison est écrite dans `dcs.log` (lignes `IFR_CURTAIN`).
+« Existe » veut dire « figure dans la liste des commandes », pas « assignée à une touche » : avec Custom_Keybinds à jour mais rien d'assigné, le rideau démarre ouvert.
+Aucune fonction du Lua d'un cockpit ne dit si une commande existe, d'où la lecture du fichier (`Saved Games\DCS\InputCommands\<input>\keyboard\default.lua`, `input` étant réglé par avion dans `shapes.lua`).
 
 ## Installer avec Open Mod Manager
 
-Trois paquets, dans deux canaux :
+Le paquet du rideau suffit pour un rideau toujours fermé ; les deux autres ajoutent les touches :
 
 | Paquet | Canal | Rôle |
 |---|---|---|
@@ -87,10 +101,8 @@ L'origine n'est pas la tête du pilote : sur le A-10C II elle est en avant, vers
 Un mur trop proche coupe une partie du cockpit ; trop loin, il laisse voir l'extérieur entre la verrière et lui.
 Un arrondi plus fort (`squareness` plus petit) estompe les arêtes mais fait rentrer la bulle dans les coins du cockpit.
 
-Pour régler, deux interrupteurs de mise au point :
-
-- `page.lua`, `DEBUG_COLOURS = true` : facettes en damier de deux couleurs, sans texture ;
-- `device.lua`, `START_CLOSED = true` : le rideau démarre fermé.
+Pour régler, `page.lua`, `DEBUG_COLOURS = true` met les facettes en damier de deux couleurs, sans texture.
+Sans les touches (Custom_Keybinds absent ou sans l'avion), le rideau démarre fermé : c'est le plus simple pour régler la bulle d'un nouvel avion.
 
 Relancer `install.ps1` après chaque modification, puis relancer la mission : les scripts du cockpit sont relus à chaque démarrage de mission, sans redémarrer DCS.
 Pour le plafond, regarder vers l'avant la tête au plus haut, verrière fermée.
