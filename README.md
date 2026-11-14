@@ -33,29 +33,34 @@ Aucune fonction du Lua d'un cockpit ne dit si une commande existe, d'où la lect
 
 ## Installer avec Open Mod Manager
 
-Le paquet du rideau suffit pour un rideau toujours fermé ; les deux autres ajoutent les touches :
+Les deux premiers paquets suffisent pour un rideau toujours fermé ; les deux autres ajoutent les touches :
 
 | Paquet | Canal | Rôle |
 |---|---|---|
-| `IFR_Curtain_v<version>.ozp` | Game files (`DCS World`) | le rideau |
+| `Cockpit_Mods_Hook_v<version>.ozp` | Game files (`DCS World`) | l'accroche partagée des mods de cockpit ([dcs-cockpit-mods](https://github.com/davidp57/dcs-cockpit-mods)) |
+| `IFR_Curtain_v<version>.ozp` (2.0.0 ou plus récente) | Game files | le rideau |
 | `Quaggles_Injector` | Game files | permet d'ajouter des commandes sans toucher aux fichiers des modules |
 | `Custom_Keybinds` (version du 2026-11-12 ou plus récente) | User files (`Saved Games\DCS`) | les commandes du rideau, avec les autres commandes de [dcs-community-keybinds](https://github.com/davidp57/dcs-community-keybinds) |
 
 Puis dans DCS : Options > Commandes > A-10C II, catégorie « IFR curtain », assigner « IFR curtain: toggle » (ou « close » / « open »).
 
-Le paquet du rideau contient le dossier `IFR_CURTAIN` et une copie complète de `KNEEBOARD\declare_kneeboard_device.lua` avec une ligne ajoutée : Open Mod Manager ne sait que remplacer des fichiers entiers, il sauvegarde l'original et le remet à la désinstallation.
-Cette copie est prise sur la version de DCS installée au moment de construire le paquet.
+Le paquet du rideau contient le dossier `IFR_CURTAIN` et sa déclaration, `COCKPIT_MODS\IFR_CURTAIN.lua`, que l'accroche exécute ; il ne remplace aucun fichier de DCS.
+C'est le paquet de l'accroche qui remplace `KNEEBOARD\declare_kneeboard_device.lua`, pour tous les mods de cockpit qui s'en servent : Open Mod Manager ne laisse qu'un paquet remplacer un même fichier.
+
+**Venant d'une version 1.x** : elle remplaçait elle-même le fichier du kneeboard.
+Désinstaller l'ancien paquet du rideau avant d'installer l'accroche, sinon Open Mod Manager signale un conflit sur ce fichier.
 
 Construire le paquet (dans `dist\`) :
 
 ```powershell
-python "D:\dev\_dcs-other\dcs-ifr-curtain\tools\build_omm.py" 1.0.0 "C:\jeux\DCS World"
+python "D:\dev\_dcs-other\dcs-ifr-curtain\tools\build_omm.py" 2.0.0
 ```
 
 ## Contenu
 
 - `mod/Scripts/Aircrafts/_Common/Cockpit/IFR_CURTAIN/` : la liste des avions équipés et la forme de leur bulle (`shapes.lua`), le module Lua (`device.lua`), l'écran de cockpit (`indicator.lua`, `page.lua`), la texture (`curtain.tga`) et leur déclaration (`declare.lua`).
-  Ajoutée au fichier du kneeboard, chargé par la plupart des modules, la déclaration ne déclare le rideau que pour les avions de `shapes.lua`, et s'abstient si l'identifiant d'équipement 250 est déjà pris.
+  La déclaration ne déclare le rideau que pour les avions de `shapes.lua`, et s'abstient si l'identifiant d'équipement 250 est déjà pris.
+- `mod/Scripts/Aircrafts/_Common/Cockpit/COCKPIT_MODS/IFR_CURTAIN.lua` : la ligne qui lance cette déclaration, exécutée par l'accroche depuis le fichier du kneeboard, chargé par la plupart des modules.
 - `tools/build_omm.py` : construit le paquet Open Mod Manager.
 - `tools/make_curtain_texture.py` : génère `curtain.tga` (Python, `numpy` et `Pillow`).
 - `install.ps1` : installation de développement, sans Open Mod Manager (voir plus bas).
@@ -64,7 +69,14 @@ Les commandes du rideau (`down` 3001 à 3003 sur l'équipement 250) sont ajouté
 
 ## Installation de développement
 
-Pour modifier le mod et l'essayer sans repasser par Open Mod Manager (ne pas installer le paquet en même temps) :
+Pour modifier le mod et l'essayer sans repasser par Open Mod Manager (ne pas installer les paquets en même temps).
+L'accroche d'abord, depuis dcs-cockpit-mods :
+
+```powershell
+& "D:\dev\_dcs-other\dcs-cockpit-mods\install.ps1" -Part Hook
+```
+
+Puis le rideau :
 
 ```powershell
 & "D:\dev\_dcs-other\dcs-ifr-curtain\install.ps1"
@@ -76,15 +88,16 @@ Pour modifier le mod et l'essayer sans repasser par Open Mod Manager (ne pas ins
 
 Pour une autre installation de DCS : `-DcsPath "D:\DCS World"`.
 
-Le script copie `IFR_CURTAIN` et ajoute la ligne d'accroche au fichier du kneeboard, encadrée par `-- IFR-CURTAIN BEGIN` / `-- IFR-CURTAIN END`.
-Le fichier est sauvegardé en `.ifr-curtain.bak` avant la modification, sauvegarde reprise chaque fois qu'il est trouvé sans le rideau (après une mise à jour de DCS, par exemple).
-La désinstallation le rend identique à l'original et supprime la sauvegarde ; un fichier qui n'est pas en UTF-8 valide est refusé plutôt que réécrit.
+Le script copie `IFR_CURTAIN` et `COCKPIT_MODS\IFR_CURTAIN.lua` ; il refuse si l'accroche n'est pas installée.
+Les versions 1.x ajoutaient leur propre ligne au fichier du kneeboard, entre `-- IFR-CURTAIN BEGIN` et `-- IFR-CURTAIN END` : `install.ps1 -Uninstall` la retire, et remet le fichier d'origine depuis sa sauvegarde `.ifr-curtain.bak` quand rien d'autre n'a changé.
+Sans cette sauvegarde, la ligne vient sans doute d'un paquet `IFR_Curtain` 1.x : le script s'arrête et demande de désinstaller ce paquet dans Open Mod Manager, qui remet lui-même le fichier d'origine (`-Force` retire la ligne quand même, pour une installation de développement dont la sauvegarde a disparu).
+Comme l'accroche refuse de s'installer tant que cette ligne est là, passer d'une 1.x à la 2.0 se fait en trois temps : retirer la 1.x (paquet dans Open Mod Manager, ou `install.ps1 -Uninstall` du rideau), puis installer l'accroche, puis le rideau.
 Les commandes viennent toujours de Custom_Keybinds.
 
 ## Limites
 
 - **L'IC échoue** : des scripts de DCS sont modifiés. Utilisable en solo et sur les serveurs qui ne vérifient pas les scripts.
-- **Une mise à jour ou une réparation de DCS écrase le fichier du kneeboard** : le rideau disparaît. Réinstaller le paquet (le reconstruire si la mise à jour a changé ce fichier), ou relancer `install.ps1`.
+- **Une mise à jour ou une réparation de DCS écrase le fichier du kneeboard** : l'accroche, et avec elle le rideau, disparaît. Réinstaller le paquet de l'accroche (le reconstruire si la mise à jour a changé ce fichier), ou relancer son `install.ps1 -Part Hook`.
 - **Le rideau ne fait pas d'ombre** : le soleil éclaire toujours la planche, et les ombres des montants tournent quand l'avion vire, ce qui trahit la position du soleil.
   Pour l'exercice, voler sous une couche nuageuse épaisse (pas de soleil direct) ou de nuit.
 - **Les arêtes se devinent encore un peu**, là où une facette passe d'une projection de la texture à une autre, au milieu des arrondis.
