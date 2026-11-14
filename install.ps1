@@ -15,7 +15,8 @@
     Versions before the hook added their own line to the kneeboard declaration (between
     "-- IFR-CURTAIN BEGIN" and "-- IFR-CURTAIN END"): installing or uninstalling takes that
     line out, and puts the file back from its .ifr-curtain.bak backup when nothing else
-    changed.
+    changed. Without that backup, the line comes from an IFR_Curtain 1.x Open Mod Manager
+    package: the script stops and asks to uninstall it there.
     After editing the mod, run this script again and restart the mission: cockpit scripts
     are read at each mission start.
 
@@ -72,19 +73,24 @@ function Clear-LegacyBlock([string]$Path) {
     $pattern = "(?ms)^[ \t]*-- $LegacyMarker BEGIN.*?-- $LegacyMarker END[ \t]*(\r?\n|\z)"
     $clean = [regex]::Replace($file.Text, $pattern, "")
     $backup = $Path + $LegacyBackupExt
-    if (Test-Path -LiteralPath $backup) {
-        # Installing may have added a final newline the original did not have: when only
-        # trailing whitespace differs from the backup, put the backup back as it was.
-        $original = Read-Text $backup
-        if ($clean.TrimEnd() -ceq $original.Text.TrimEnd()) {
-            Copy-Item -LiteralPath $backup -Destination $Path -Force
-            Remove-Item -LiteralPath $backup -Force
-            Write-Host "Restored (old curtain line taken out): $Path"
-            return
-        }
+    if (-not (Test-Path -LiteralPath $backup)) {
+        # No backup of ours: the line comes from an IFR_Curtain 1.x package, and Open Mod
+        # Manager owns the file. It puts the original back when the package is uninstalled.
+        throw "The kneeboard file holds the line of an IFR_Curtain 1.x package ($Path): uninstall that package in Open Mod Manager first."
     }
-    Write-Text $Path $clean $file.Bom
-    Write-Host "Cleaned (old curtain line taken out): $Path"
+    # Installing may have added a final newline the original did not have: when only
+    # trailing whitespace differs from the backup, put the backup back as it was.
+    $original = Read-Text $backup
+    if ($clean.TrimEnd() -ceq $original.Text.TrimEnd()) {
+        Copy-Item -LiteralPath $backup -Destination $Path -Force
+        Write-Host "Restored (old curtain line taken out): $Path"
+    }
+    else {
+        Write-Text $Path $clean $file.Bom
+        Write-Host "Cleaned (old curtain line taken out): $Path"
+    }
+    # Nothing else uses this backup any more.
+    Remove-Item -LiteralPath $backup -Force
 }
 
 function Remove-IfPresent([string]$Path) {

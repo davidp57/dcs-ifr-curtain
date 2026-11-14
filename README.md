@@ -90,7 +90,8 @@ Pour une autre installation de DCS : `-DcsPath "D:\DCS World"`.
 
 Le script copie `IFR_CURTAIN` et `COCKPIT_MODS\IFR_CURTAIN.lua` ; il refuse si l'accroche n'est pas installée.
 Les versions 1.x ajoutaient leur propre ligne au fichier du kneeboard, entre `-- IFR-CURTAIN BEGIN` et `-- IFR-CURTAIN END` : l'installation et la désinstallation la retirent, et remettent le fichier d'origine depuis sa sauvegarde `.ifr-curtain.bak` quand rien d'autre n'a changé.
-Comme l'accroche refuse de s'installer tant que cette ligne est là, passer d'une installation de développement 1.x à la 2.0 se fait en trois temps : `install.ps1 -Uninstall` du rideau, puis l'accroche, puis `install.ps1` du rideau.
+Sans cette sauvegarde, la ligne vient d'un paquet `IFR_Curtain` 1.x : le script s'arrête et demande de désinstaller ce paquet dans Open Mod Manager, qui remet lui-même le fichier d'origine.
+Comme l'accroche refuse de s'installer tant que cette ligne est là, passer d'une 1.x à la 2.0 se fait en trois temps : retirer la 1.x (paquet dans Open Mod Manager, ou `install.ps1 -Uninstall` du rideau), puis installer l'accroche, puis le rideau.
 Les commandes viennent toujours de Custom_Keybinds.
 
 ## Limites
