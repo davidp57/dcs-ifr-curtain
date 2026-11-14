@@ -35,12 +35,12 @@ Aucune fonction du Lua d'un cockpit ne dit si une commande existe, d'où la lect
 
 Les deux premiers paquets suffisent pour un rideau toujours fermé ; les deux autres ajoutent les touches :
 
-| Paquet | Canal | Rôle |
-|---|---|---|
-| `Cockpit_Mods_Hook_v<version>.ozp` | Game files (`DCS World`) | l'accroche partagée des mods de cockpit ([dcs-cockpit-mods](https://github.com/davidp57/dcs-cockpit-mods)) |
-| `IFR_Curtain_v<version>.ozp` (2.0.0 ou plus récente) | Game files | le rideau |
-| `Quaggles_Injector` | Game files | permet d'ajouter des commandes sans toucher aux fichiers des modules |
-| `Custom_Keybinds` (version du 2026-11-12 ou plus récente) | User files (`Saved Games\DCS`) | les commandes du rideau, avec les autres commandes de [dcs-community-keybinds](https://github.com/davidp57/dcs-community-keybinds) |
+| Paquet | Où le trouver | Canal | Rôle |
+|---|---|---|---|
+| `Cockpit_Mods_Hook_v<version>.ozp` | [releases de dcs-cockpit-mods](https://github.com/davidp57/dcs-cockpit-mods/releases) | Game files (`DCS World`) | l'accroche partagée des mods de cockpit |
+| `IFR_Curtain_v<version>.ozp` (2.0.0 ou plus récente) | [releases de ce dépôt](https://github.com/davidp57/dcs-ifr-curtain/releases) | Game files | le rideau |
+| `Quaggles_Injector` | [Quaggles' DCS Input Command Injector](https://github.com/Quaggles/dcs-input-command-injector) | Game files | permet d'ajouter des commandes sans toucher aux fichiers des modules |
+| `Custom_Keybinds` (version du 2026-11-12 ou plus récente) | diffusé sur les canaux de la VEAF (sources : [dcs-community-keybinds](https://github.com/davidp57/dcs-community-keybinds)) | User files (`Saved Games\DCS`) | les commandes du rideau, avec les autres commandes de la communauté |
 
 Puis dans DCS : Options > Commandes > A-10C II, catégorie « IFR curtain », assigner « IFR curtain: toggle » (ou « close » / « open »).
 
