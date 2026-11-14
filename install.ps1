@@ -13,10 +13,11 @@
     (dcs-community-keybinds), through Quaggles' DCS Input Command Injector.
 
     Versions before the hook added their own line to the kneeboard declaration (between
-    "-- IFR-CURTAIN BEGIN" and "-- IFR-CURTAIN END"): installing or uninstalling takes that
+    "-- IFR-CURTAIN BEGIN" and "-- IFR-CURTAIN END"): -Uninstall takes that
     line out, and puts the file back from its .ifr-curtain.bak backup when nothing else
-    changed. Without that backup, the line comes from an IFR_Curtain 1.x Open Mod Manager
-    package: the script stops and asks to uninstall it there.
+    changed. Without that backup, the line most likely comes from an IFR_Curtain 1.x Open
+    Mod Manager package: the script stops and asks to uninstall it there (-Force takes the
+    line out anyway).
     After editing the mod, run this script again and restart the mission: cockpit scripts
     are read at each mission start.
 
@@ -29,7 +30,8 @@
 #>
 param(
     [string]$DcsPath = "C:\jeux\DCS World",
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    [switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -74,9 +76,14 @@ function Clear-LegacyBlock([string]$Path) {
     $clean = [regex]::Replace($file.Text, $pattern, "")
     $backup = $Path + $LegacyBackupExt
     if (-not (Test-Path -LiteralPath $backup)) {
-        # No backup of ours: the line comes from an IFR_Curtain 1.x package, and Open Mod
-        # Manager owns the file. It puts the original back when the package is uninstalled.
-        throw "The kneeboard file holds the line of an IFR_Curtain 1.x package ($Path): uninstall that package in Open Mod Manager first."
+        if (-not $Force) {
+            # No backup of ours: the line most likely comes from an IFR_Curtain 1.x package,
+            # and Open Mod Manager owns the file. It puts the original back on uninstall.
+            throw "The kneeboard file holds the line of an IFR curtain 1.x without the backup this script makes ($Path): uninstall the IFR_Curtain 1.x package in Open Mod Manager, or, for a development install whose backup was lost, pass -Force."
+        }
+        Write-Text $Path $clean $file.Bom
+        Write-Host "Cleaned (old curtain line taken out, no backup): $Path"
+        return
     }
     # Installing may have added a final newline the original did not have: when only
     # trailing whitespace differs from the backup, put the backup back as it was.
@@ -104,17 +111,18 @@ if (-not (Test-Path -LiteralPath $KneeboardFile)) {
     throw "DCS not found: $KneeboardFile does not exist. Pass -DcsPath."
 }
 
-Clear-LegacyBlock $KneeboardFile
-
 if ($Uninstall) {
+    Clear-LegacyBlock $KneeboardFile
     Remove-IfPresent $DeclareTarget
     Remove-IfPresent $ModTarget
     Write-Host "IFR curtain removed."
     return
 }
 
+# Checked before changing anything. The hook refuses to install over a 1.x line, so with the
+# hook in place there is no 1.x line left to take out.
 if (-not (Test-Path -LiteralPath $Loader)) {
-    throw "The cockpit mods hook is not installed ($Loader): run dcs-cockpit-mods\install.ps1 -Part Hook first (or install the Cockpit_Mods_Hook package)."
+    throw "The cockpit mods hook is not installed ($Loader). Coming from a 1.x development install: run this script with -Uninstall first. Then run dcs-cockpit-mods\install.ps1 -Part Hook (or install the Cockpit_Mods_Hook package), then this script again."
 }
 
 Remove-IfPresent $ModTarget

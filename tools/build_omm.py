@@ -15,6 +15,7 @@ Usage: python tools/build_omm.py VERSION [output folder]
 import sys
 import zipfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 REPO = Path(__file__).resolve().parent.parent
 MOD = REPO / "mod"
@@ -59,7 +60,7 @@ def main():
         "<Open_Mod_Manager_Package>\n"
         f"\t<install>{name}</install>\n"
         f"\t<category>{CATEGORY}</category>\n"
-        f"\t<description>{DESCRIPTION}</description>\n"
+        f"\t<description>{escape(DESCRIPTION)}</description>\n"
         "</Open_Mod_Manager_Package>\n"
     )
     with zipfile.ZipFile(package, "w", zipfile.ZIP_DEFLATED) as z:
