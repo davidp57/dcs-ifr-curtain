@@ -1,5 +1,6 @@
 -- IFR curtain: declares the Lua device and the cockpit indicator.
--- Loaded from declare_kneeboard_device.lua, so it runs inside each module's device_init.lua.
+-- Loaded from COCKPIT_MODS/IFR_CURTAIN.lua by the cockpit mods hook, which runs from
+-- declare_kneeboard_device.lua, so inside each module's device_init.lua.
 -- Does nothing for an aircraft that has no shape in shapes.lua, or whose device id is taken.
 
 local IFR_CURTAIN_DEVICE_ID = 250
