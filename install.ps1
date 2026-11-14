@@ -121,8 +121,9 @@ if ($Uninstall) {
 
 # Checked before changing anything. The hook refuses to install over a 1.x line, so with the
 # hook in place there is no 1.x line left to take out.
-if (-not (Test-Path -LiteralPath $Loader)) {
-    throw "The cockpit mods hook is not installed ($Loader). Coming from a 1.x development install: run this script with -Uninstall first. Then run dcs-cockpit-mods\install.ps1 -Part Hook (or install the Cockpit_Mods_Hook package), then this script again."
+# Both halves: a DCS update or repair puts the kneeboard file back and leaves the loader.
+if (-not (Test-Path -LiteralPath $Loader) -or -not (Read-Text $KneeboardFile).Text.Contains("COCKPIT_MODS/_loader.lua")) {
+    throw "The cockpit mods hook is not installed ($Loader, and its line in $KneeboardFile). Coming from a 1.x development install: run this script with -Uninstall first. Then run dcs-cockpit-mods\install.ps1 -Part Hook (or install the Cockpit_Mods_Hook package), then this script again."
 }
 
 Remove-IfPresent $ModTarget
